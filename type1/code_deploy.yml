@@ -1,0 +1,93 @@
+Parameters:
+  Environment:
+    Description: Select target environment.
+    Type: String
+    Default: Develop
+    AllowedValues:
+      - Develop
+      - Staging
+      - Production
+
+  TagProject:
+    Description: Input project name for tag.
+    Type: String
+    Default: HogeProject
+
+  Identifier:
+    Description: Input identifier.
+    Type: String
+    Default: hoge
+
+  CodeDeployRole:
+    Description: Input Role for CodeDeploy.
+    Type: String
+
+  CodeDeployS3Bucket:
+    Description: Input S3 Bucket Name for CodeDeploy.
+    Type: String
+    AllowedPattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    MinLength: 3
+    MaxLength: 63
+    ConstraintDescription: Input-Parameter must match pattern '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+
+  CodeDeployObjectKey:
+    Description: Input Object Key for CodeDeploy
+    Type: String
+
+  CodeDeployBundleType:
+    Description: Select bundle type of Object.
+    Type: String
+    Default: zip
+    AllowedValues:
+      - zip
+      - tar
+      - tgz
+      - JSON
+      - YAML
+
+Resources:
+  #====================================
+  # CodeDeploy
+  #====================================
+  # Apllication
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub ${TagProject}-${Environment}
+      ComputePlatform: Server
+
+  # DeploymentGroup
+  CodeDeployConfigGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      # アプリケーション名
+      ApplicationName: !Ref CodeDeployApplication
+      # デプロイグループ名
+      DeploymentGroupName: all
+      # サービスロール
+      ServiceRoleArn:
+        Ref: CodeDeployRole
+      # デプロイタイプ
+      DeploymentStyle:
+        DeploymentType: IN_PLACE
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      # 環境設定
+      AutoScalingGroups:
+        - Fn::ImportValue: !Sub TargetGroup-${TagProject}-${Identifier}
+      # デプロイ設定
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      # ロードバランサー
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: !Sub TG-${TagProject}-${Identifier}
+      Deployment:
+        Description: hogehoge
+        Revision:
+          RevisionType: S3
+          S3Location:
+            Bucket:
+              Ref: CodeDeployS3Bucket
+            Key:
+              Ref: CodeDeployObjectKey
+            BundleType:
+              Ref: CodeDeployBundleType

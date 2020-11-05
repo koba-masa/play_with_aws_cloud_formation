@@ -34,6 +34,11 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName: !Sub log.${ProjectNameForBucketSuffix}
         LogFilePrefix: !Sub accesslog/s3/log.${ProjectNameForBucketSuffix}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Project
           Value:
@@ -53,6 +58,11 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName: !Ref LogBucket
         LogFilePrefix: !Sub accesslog/s3/code.deploy.${ProjectNameForBucketSuffix}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Project
           Value:

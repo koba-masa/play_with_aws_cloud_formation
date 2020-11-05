@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  TagProject:
+    Description: Input project name for tag.
+    Type: String
+    Default: HogeProject
+
+  ProjectNameForBucketSuffix:
+    Description: Input project name for bucket suffix.
+    Type: String
+    Default: hoge.project
+    AllowedPattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    MinLength: 3
+    MaxLength: 63
+    ConstraintDescription: Input-Parameter must match pattern '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+
+  RoleArnForEC2:
+    Description: Input Role ARN for WebServer's EC2 .
+    Type: String
+
+Resources:
+  #====================================
+  # S3
+  #====================================
+  # ログバケット
+  LogBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub log.${ProjectNameForBucketSuffix}
+      VersioningConfiguration:
+        Status: Suspended
+      ObjectLockEnabled: false
+      AccessControl: LogDeliveryWrite
+      LoggingConfiguration:
+        DestinationBucketName: !Sub log.${ProjectNameForBucketSuffix}
+        LogFilePrefix: !Sub accesslog/s3/log.${ProjectNameForBucketSuffix}
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value: Production And Staging
+
+  # デプロイ用S3
+  CodeDeployBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub code.deploy.${ProjectNameForBucketSuffix}
+      VersioningConfiguration:
+        Status: Suspended
+      ObjectLockEnabled: false
+      AccessControl: Private
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LogBucket
+        LogFilePrefix: !Sub accesslog/s3/code.deploy.${ProjectNameForBucketSuffix}
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value: Production And Staging
+
+  # デプロイ用S3-バケットポリシー
+  PolicyOfCodeDeployBucket:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CodeDeployBucket
+      PolicyDocument:
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": !Sub "${RoleArnForEC2}"
+              },
+              "Action": [
+                "s3:Get*",
+                "s3:List*"
+              ],
+              "Resource": [
+                !Join ["", ["arn:aws:s3:::", !Ref CodeDeployBucket]],
+                !Join ["", ["arn:aws:s3:::", !Ref CodeDeployBucket, "/*"]]
+              ]
+            }
+          ]
+        }

@@ -1,0 +1,329 @@
+AWSTemplateFormatVersion: 2010-09-09
+Outputs:
+  TargetGroup1:
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub TargetGroup-${TagProject}-${Identifier}
+
+Parameters:
+  Environment:
+    Description: Select target environment.
+    Type: String
+    Default: Develop
+    AllowedValues:
+      - Develop
+      - Staging
+      - Production
+
+  TagProject:
+    Description: Input project name for tag.
+    Type: String
+    Default: HogeProject
+
+  Identifier:
+    Description: Input identifier.
+    Type: String
+    Default: hoge
+
+  KeyPairName:
+    Description: Select KeyName of KeyPair.
+    Type: AWS::EC2::KeyPair::KeyName
+
+  VPC:
+    Type: AWS::EC2::VPC::Id
+
+  PrivateSubnet1CidrBlock:
+    Description: Input IPv4 CiderBlock for private subnet1. ex)10.0.4.0/24
+    Type: String
+    Default: 10.0.4.0/24
+
+  PrivateSubnet2CidrBlock:
+    Description: Input IPv4 CiderBlock for private subnet2. ex)10.0.5.0/24
+    Type: String
+    Default: 10.0.5.0/24
+
+  PrivateSubnet3CidrBlock:
+    Description: Input IPv4 CiderBlock for private subnet2. ex)10.0.6.0/24
+    Type: String
+    Default: 10.0.6.0/24
+
+  AMIIDForWebServer:
+    Description: Input AMI ID for WebServer.
+    Type: AWS::EC2::Image::Id
+
+  InstanceProfileArnForEC2Role:
+    Description: Input Instance Profile ARN for WebServer's EC2 Role.
+    Type: String
+
+Resources:
+  #====================================
+  # Subnet
+  #====================================
+  PrivateSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "a"] ]
+      CidrBlock:
+        Ref: PrivateSubnet1CidrBlock
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Identifier
+          Value:
+            Ref: Identifier
+        - Key: Name
+          Value: !Sub PrivateSubnetA-${TagProject}-${Identifier}
+
+  PrivateSubnetB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "b"]]
+      CidrBlock:
+        Ref: PrivateSubnet2CidrBlock
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Identifier
+          Value:
+            Ref: Identifier
+        - Key: Name
+          Value: !Sub PrivateSubnetB-${TagProject}-${Identifier}
+
+  PrivateSubnetC:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "c"]]
+      CidrBlock:
+        Ref: PrivateSubnet3CidrBlock
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Identifier
+          Value:
+            Ref: Identifier
+        - Key: Name
+          Value: !Sub PrivateSubnetC-${TagProject}-${Identifier}
+
+  # プライベートサブネットにルートテーブルをアタッチ
+  SubnetRouteTableAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub RTForPrivate-${TagProject}-${Environment}
+      SubnetId: !Ref PrivateSubnetA
+
+  SubnetRouteTableAssociationB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub RTForPrivate-${TagProject}-${Environment}
+      SubnetId: !Ref PrivateSubnetB
+
+  SubnetRouteTableAssociationC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub RTForPrivate-${TagProject}-${Environment}
+      SubnetId: !Ref PrivateSubnetC
+
+  #====================================
+  # End Point
+  #====================================
+  EndpointToCodeDeployCommand:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Join ["", ["com.amazonaws.", !Ref "AWS::Region", ".codedeploy-commands-secure"]]
+      PolicyDocument:
+        {
+          "Statement": [
+            {
+              "Action": [
+                  "codedeploy-commands-secure:GetDeploymentSpecification",
+                  "codedeploy-commands-secure:PollHostCommand",
+                  "codedeploy-commands-secure:PutHostCommandAcknowledgement",
+                  "codedeploy-commands-secure:PutHostCommandComplete"
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+              "Principal": "*"
+            }
+          ]
+        }
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+        - !Ref PrivateSubnetC
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub SGForWebServer-${TagProject}-${Environment}
+      PrivateDnsEnabled: true
+      VpcId:
+        Ref: VPC
+
+  #====================================
+  # TargetGroup
+  #====================================
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 300
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      Matcher:
+        HttpCode: 200-299
+      Name: !Sub TG-${TagProject}-${Identifier}
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Identifier
+          Value:
+            Ref: Identifier
+        - Key: Name
+          Value: !Sub TG-${TagProject}-${Identifier}
+
+  #====================================
+  # ALB
+  #====================================
+  # LoadBalancer
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: access.log.study
+        - Key: access_logs.s3.prefix
+          Value: alb
+      Name: !Sub ALB-${TagProject}-${Identifier}
+      Scheme: internet-facing
+      SecurityGroups:
+        - Fn::ImportValue: !Sub SGForWebServer-${TagProject}-${Environment}
+      SubnetMappings:
+        - SubnetId: !Ref PrivateSubnetA
+        - SubnetId: !Ref PrivateSubnetB
+        - SubnetId: !Ref PrivateSubnetC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Identifier
+          Value:
+            Ref: Identifier
+        - Key: Name
+          Value: !Sub ALB-${TagProject}-${Identifier}
+
+  # Listener-HTTPS
+  # AlbListenerHttps:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     LoadBalancerArn: !Ref LoadBalancer
+  #     Port: 443
+  #     Protocol: HTTPS
+  #     SslPolicy: ELBSecurityPolicy-2016-08
+  #     Certificates:
+  #       Ref:
+  #     DefaultActions:
+  #       - Type: forward
+  #         ForwardConfig:
+  #           TargetGroups:
+  #             - TargetGroupArn: !Ref TargetGroup
+  #           TargetGroupStickinessConfig:
+  #             DurationSeconds: 200
+  #             Enabled: true
+
+  # Listener-HTTP
+  AlbListenerHttp:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        # - Type: redirect
+        #   RedirectConfig:
+        #   Host: '#{host}'
+        #   Path: '/#{path}'
+        #   Port: 443
+        #   Protocol: HTTPS
+        #   Query: '#{query}'
+        #   StatusCode: HTTP_301
+        - Type: forward
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref TargetGroup
+            TargetGroupStickinessConfig:
+              DurationSeconds: 200
+              Enabled: true
+
+  #====================================
+  # AutoScaling
+  #====================================
+  # AutoScaling LunchConfig
+  AutoScalingConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Ref: AMIIDForWebServer
+      InstanceType: t2.micro
+      SecurityGroups:
+        - Fn::ImportValue: !Sub SGForWebServer-${TagProject}-${Environment}
+      KeyName:
+        Ref: KeyPairName
+      IamInstanceProfile:
+        Ref: InstanceProfileArnForEC2Role
+
+  # AutoScaling Group
+  AutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+        - !Ref PrivateSubnetC
+      LaunchConfigurationName: !Ref AutoScalingConfig
+      MinSize: '1'
+      MaxSize: '5'
+      HealthCheckGracePeriod: 10
+      MaxInstanceLifetime: 604800
+      TargetGroupARNs:
+        - !Ref TargetGroup

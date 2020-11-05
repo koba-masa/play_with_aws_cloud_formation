@@ -1,0 +1,361 @@
+AWSTemplateFormatVersion: 2010-09-09
+Outputs:
+  RTForPrivateSubnet:
+    Value: !Ref RouteTableForPrivateSubnet
+    Export:
+      Name: !Sub RTForPrivate-${TagProject}-${Environment}
+
+  SecurityGroupForALB:
+    Value: !Ref SGForALB
+    Export:
+      Name: !Sub SGForALB-${TagProject}-${Environment}
+
+  SecurityGroupForWS:
+    Value: !Ref SGForWebServer
+    Export:
+      Name: !Sub SGForWebServer-${TagProject}-${Environment}
+
+Parameters:
+  Environment:
+    Description: Select target environment.
+    Type: String
+    Default: Develop
+    AllowedValues:
+      - Develop
+      - Staging
+      - Production
+
+  TagProject:
+    Description: Input project name for tag.
+    Type: String
+    Default: HogeProject
+
+  VPCCidrBlock:
+    Description: Input IPv4 CiderBlock for VPC. ex)10.0.0.0/16
+    Type: String
+    Default: 10.0.0.0/16
+
+  Subnet1CidrBlock:
+    Description: Input IPv4 CiderBlock for public subnet1. ex)10.0.1.0/24
+    Type: String
+    Default: 10.0.1.0/24
+
+  Subnet2CidrBlock:
+    Description: Input IPv4 CiderBlock for public subnet2. ex)10.0.2.0/24
+    Type: String
+    Default: 10.0.2.0/24
+
+  Subnet3CidrBlock:
+    Description: Input IPv4 CiderBlock for public subnet3. ex)10.0.3.0/24
+    Type: String
+    Default: 10.0.3.0/24
+
+  DeployS3BucketArn:
+    Description: Input S3Bucket ARN for deployment.
+    Type: String
+
+Resources:
+  #====================================
+  # VPC
+  #====================================
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock:
+        Ref: VPCCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub VPC-${TagProject}-${Environment}
+
+  #====================================
+  # Subnet
+  #====================================
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "a"]]
+      CidrBlock:
+        Ref: Subnet1CidrBlock
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub PublicA-${TagProject}-${Environment}
+
+  PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "b"]]
+      CidrBlock:
+        Ref: Subnet2CidrBlock
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub PublicB-${TagProject}-${Environment}
+
+  PublicSubnet3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Join [ "", [Ref: "AWS::Region", "c"]]
+      CidrBlock:
+        Ref: Subnet3CidrBlock
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub PublicC-${TagProject}-${Environment}
+
+  #====================================
+  # Security Group
+  #====================================
+  SGForWebServer:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Secrurity Group for WebServer
+      GroupName: SGForWebServer
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - Description: All
+          CidrIp: 0.0.0.0/0
+          IpProtocol: '-1'
+
+      SecurityGroupIngress:
+        - Description: AllFromBastion
+          IpProtocol: '-1'
+          SourceSecurityGroupId: !Ref SGForBastion
+
+        - Description: HTTPFromALB
+          CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          # SourceSecurityGroupId: !Ref SGForALB
+          ToPort: 80
+
+        - Description: HTTPFromALB
+          CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          # SourceSecurityGroupId: !Ref SGForALB
+          ToPort: 443
+
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub SGForWS-${TagProject}-${Environment}
+
+  SGForBastion:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Secrurity Group for EC2(Bastion)
+      GroupName: SGForBastion
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: All
+          IpProtocol: '-1'
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub SGForBastion-${TagProject}-${Environment}
+
+  SGForALB:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Secrurity Group for ALB
+      GroupName: SGForALB
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: All
+          IpProtocol: '-1'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: HTTPFromALB
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          Description: HTTPFromALB
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub SGForALB-${TagProject}-${Environment}
+
+  #====================================
+  # Internet Gateway
+  #====================================
+  internetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+
+        - Key: Name
+          Value: !Sub IG-${TagProject}-${Environment}
+
+  # Internet GatewayをVPCにアタッチ
+  igAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref internetGateway
+      VpcId: !Ref VPC
+
+  #====================================
+  # Route Table
+  #====================================
+  # パブリックサブネット用のルートテーブル
+  RouteTableForPublicSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub RTForPublic-${TagProject}-${Environment}
+
+  # ルートテーブルにゲートウェイをアタッチ
+  routeTableToGateWay:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref internetGateway
+      RouteTableId: !Ref RouteTableForPublicSubnet
+
+  # パブリックサブネットにルートテーブルをアタッチ
+  subnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForPublicSubnet
+      SubnetId: !Ref PublicSubnet1
+
+  subnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForPublicSubnet
+      SubnetId: !Ref PublicSubnet2
+
+  subnetRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForPublicSubnet
+      SubnetId: !Ref PublicSubnet3
+
+  # プライベートサブネット用のルートテーブル
+  RouteTableForPrivateSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Project
+          Value:
+            Ref: TagProject
+        - Key: Environment
+          Value:
+            Ref: Environment
+        - Key: Name
+          Value: !Sub RTForPrivate-${TagProject}-${Environment}
+
+  #====================================
+  # End Point
+  #====================================
+  EndpointToS3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Gateway
+      ServiceName: !Join ["", ["com.amazonaws.", !Ref "AWS::Region", ".s3"]]
+      PolicyDocument:
+        {
+          "Statement": [
+            {
+              "Sid": "ForYumCommand",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "*",
+              "Resource": [
+                "arn:aws:s3:::amazonlinux.*.amazonaws.com/*"
+              ]
+            },
+            {
+              "Sid": "ForInstallCodeDeployAgent",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "*",
+              "Resource": [
+                "arn:aws:s3:::aws-codedeploy*"
+              ]
+            },
+            {
+              "Sid": "ForS3BucketOfCodeDeploy",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": [
+                "s3:List*",
+                "s3:Get*"
+              ],
+              "Resource": [
+                !Sub "${DeployS3BucketArn}",
+                !Sub "${DeployS3BucketArn}/*"
+              ]
+            }
+          ]
+        }
+      RouteTableIds:
+        - !Ref RouteTableForPublicSubnet
+        - !Ref RouteTableForPrivateSubnet
+      VpcId: !Ref VPC

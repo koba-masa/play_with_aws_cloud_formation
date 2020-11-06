@@ -214,7 +214,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub S${TagProject}-${Environment}-Bastion
+          Value: !Sub ${TagProject}-${Environment}-Bastion
 
   SGForALB:
     Type: 'AWS::EC2::SecurityGroup'

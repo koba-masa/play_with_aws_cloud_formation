@@ -314,8 +314,9 @@ Resources:
 
   # AutoScaling Group
   AutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
+      AutoScalingGroupName: !Sub ${TagProject}-${Environment}-${Identifier}
       VPCZoneIdentifier:
         - !Ref PrivateSubnetA
         - !Ref PrivateSubnetB
@@ -327,3 +328,15 @@ Resources:
       MaxInstanceLifetime: 604800
       TargetGroupARNs:
         - !Ref TargetGroup
+      Tags:
+        - PropagateAtLaunch: true
+          Key: Name
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}-WS
+        - PropagateAtLaunch: true
+          Key: Environment
+          Value:
+            Ref: Environment
+        - PropagateAtLaunch: true
+          Key: Identifier
+          Value:
+            Ref: Identifier

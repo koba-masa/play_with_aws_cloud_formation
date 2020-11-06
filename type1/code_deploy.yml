@@ -63,7 +63,7 @@ Resources:
       # アプリケーション名
       ApplicationName: !Ref CodeDeployApplication
       # デプロイグループ名
-      DeploymentGroupName: all
+      DeploymentGroupName: FirstDeploy
       # サービスロール
       ServiceRoleArn:
         Ref: CodeDeployRole
@@ -81,7 +81,7 @@ Resources:
         TargetGroupInfoList:
           - Name: !Sub TG-${TagProject}-${Identifier}
       Deployment:
-        Description: hogehoge
+        Description: Deploy in-place mode before deploy blue-green mode
         Revision:
           RevisionType: S3
           S3Location:

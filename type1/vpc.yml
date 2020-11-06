@@ -15,6 +15,26 @@ Outputs:
     Export:
       Name: !Sub SGForWebServer-${TagProject}-${Environment}
 
+  Vpc:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub VPC-${TagProject}-${Environment}
+
+  PublicSubnetA:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub PublicSubnetA-${TagProject}-${Environment}
+
+  PublicSubnetB:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub PublicSubnetB-${TagProject}-${Environment}
+
+  PublicSubnetC:
+    Value: !Ref PublicSubnet3
+    Export:
+      Name: !Sub PublicSubnetC-${TagProject}-${Environment}
+
 Parameters:
   Environment:
     Description: Select target environment.

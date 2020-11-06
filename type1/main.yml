@@ -29,9 +29,6 @@ Parameters:
     Description: Select KeyName of KeyPair.
     Type: AWS::EC2::KeyPair::KeyName
 
-  VPC:
-    Type: AWS::EC2::VPC::Id
-
   PrivateSubnet1CidrBlock:
     Description: Input IPv4 CiderBlock for private subnet1. ex)10.0.4.0/24
     Type: String
@@ -67,7 +64,7 @@ Resources:
         Ref: PrivateSubnet1CidrBlock
       MapPublicIpOnLaunch: false
       VpcId:
-        Ref: VPC
+        Fn::ImportValue: !Sub VPC-${TagProject}-${Environment}
       Tags:
         - Key: Project
           Value:
@@ -89,7 +86,7 @@ Resources:
         Ref: PrivateSubnet2CidrBlock
       MapPublicIpOnLaunch: false
       VpcId:
-        Ref: VPC
+        Fn::ImportValue: !Sub VPC-${TagProject}-${Environment}
       Tags:
         - Key: Project
           Value:
@@ -111,7 +108,7 @@ Resources:
         Ref: PrivateSubnet3CidrBlock
       MapPublicIpOnLaunch: false
       VpcId:
-        Ref: VPC
+        Fn::ImportValue: !Sub VPC-${TagProject}-${Environment}
       Tags:
         - Key: Project
           Value:
@@ -179,7 +176,7 @@ Resources:
         - Fn::ImportValue: !Sub SGForWebServer-${TagProject}-${Environment}
       PrivateDnsEnabled: true
       VpcId:
-        Ref: VPC
+        Fn::ImportValue: !Sub VPC-${TagProject}-${Environment}
 
   #====================================
   # TargetGroup
@@ -188,21 +185,21 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckEnabled: true
-      HealthCheckIntervalSeconds: 300
       HealthCheckPath: /
       HealthCheckPort: 80
       HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 10
+      HealthCheckIntervalSeconds: 60
+      HealthCheckTimeoutSeconds: 15
       HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 5
       Matcher:
         HttpCode: 200-299
       Name: !Sub TG-${TagProject}-${Identifier}
       Port: 80
       Protocol: HTTP
       TargetType: instance
-      UnhealthyThresholdCount: 2
       VpcId:
-        Ref: VPC
+        Fn::ImportValue: !Sub VPC-${TagProject}-${Environment}
       Tags:
         - Key: Project
           Value:
@@ -234,11 +231,14 @@ Resources:
       Name: !Sub ALB-${TagProject}-${Identifier}
       Scheme: internet-facing
       SecurityGroups:
-        - Fn::ImportValue: !Sub SGForWebServer-${TagProject}-${Environment}
+        - Fn::ImportValue: !Sub SGForALB-${TagProject}-${Environment}
       SubnetMappings:
-        - SubnetId: !Ref PrivateSubnetA
-        - SubnetId: !Ref PrivateSubnetB
-        - SubnetId: !Ref PrivateSubnetC
+        - SubnetId:
+            Fn::ImportValue: !Sub PublicSubnetA-${TagProject}-${Environment}
+        - SubnetId:
+            Fn::ImportValue: !Sub PublicSubnetB-${TagProject}-${Environment}
+        - SubnetId:
+            Fn::ImportValue: !Sub PublicSubnetC-${TagProject}-${Environment}
       Tags:
         - Key: Project
           Value:

@@ -73,7 +73,7 @@ Resources:
         DeploymentOption: WITH_TRAFFIC_CONTROL
       # 環境設定
       AutoScalingGroups:
-        - Fn::ImportValue: !Sub TargetGroup-${TagProject}-${Identifier}
+        - Fn::ImportValue: !Sub TargetGroup-${TagProject}-${Environment}-${Identifier}
       # デプロイ設定
       DeploymentConfigName: CodeDeployDefault.AllAtOnce
       # ロードバランサー

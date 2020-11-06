@@ -94,7 +94,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub VPC-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}
 
   #====================================
   # Subnet
@@ -115,7 +115,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub PublicA-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-PublicA
 
   PublicSubnet2:
     Type: 'AWS::EC2::Subnet'
@@ -133,7 +133,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub PublicB-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-PublicB
 
   PublicSubnet3:
     Type: 'AWS::EC2::Subnet'
@@ -151,7 +151,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub PublicC-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-PublicC
 
   #====================================
   # Security Group
@@ -194,7 +194,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub SGForWS-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-WS
 
   SGForBastion:
     Type: 'AWS::EC2::SecurityGroup'
@@ -214,7 +214,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub SGForBastion-${TagProject}-${Environment}
+          Value: !Sub S${TagProject}-${Environment}-Bastion
 
   SGForALB:
     Type: 'AWS::EC2::SecurityGroup'
@@ -245,7 +245,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub SGForALB-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-ALB
 
   #====================================
   # Internet Gateway
@@ -260,7 +260,6 @@ Resources:
         - Key: Environment
           Value:
             Ref: Environment
-
         - Key: Name
           Value: !Sub IG-${TagProject}-${Environment}
 
@@ -287,7 +286,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub RTForPublic-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-Public
 
   # ルートテーブルにゲートウェイをアタッチ
   routeTableToGateWay:
@@ -329,7 +328,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub RTForPrivate-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}-Private
 
   #====================================
   # End Point

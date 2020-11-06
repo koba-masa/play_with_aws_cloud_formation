@@ -3,7 +3,7 @@ Outputs:
   TargetGroup1:
     Value: !Ref AutoScalingGroup
     Export:
-      Name: !Sub TargetGroup-${TagProject}-${Identifier}
+      Name: !Sub TargetGroup-${TagProject}-${Environment}-${Identifier}
 
 Parameters:
   Environment:
@@ -76,7 +76,7 @@ Resources:
           Value:
             Ref: Identifier
         - Key: Name
-          Value: !Sub PrivateSubnetA-${TagProject}-${Identifier}
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}-PrivateA
 
   PrivateSubnetB:
     Type: 'AWS::EC2::Subnet'
@@ -98,7 +98,7 @@ Resources:
           Value:
             Ref: Identifier
         - Key: Name
-          Value: !Sub PrivateSubnetB-${TagProject}-${Identifier}
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}-PrivateB
 
   PrivateSubnetC:
     Type: 'AWS::EC2::Subnet'
@@ -120,7 +120,7 @@ Resources:
           Value:
             Ref: Identifier
         - Key: Name
-          Value: !Sub PrivateSubnetC-${TagProject}-${Identifier}
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}-PrivateC
 
   # プライベートサブネットにルートテーブルをアタッチ
   SubnetRouteTableAssociationA:
@@ -211,7 +211,7 @@ Resources:
           Value:
             Ref: Identifier
         - Key: Name
-          Value: !Sub TG-${TagProject}-${Identifier}
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}
 
   #====================================
   # ALB
@@ -250,7 +250,7 @@ Resources:
           Value:
             Ref: Identifier
         - Key: Name
-          Value: !Sub ALB-${TagProject}-${Identifier}
+          Value: !Sub ${TagProject}-${Environment}-${Identifier}
 
   # Listener-HTTPS
   # AlbListenerHttps:

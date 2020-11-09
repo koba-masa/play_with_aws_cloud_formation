@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Outputs:
-  TargetGroup1:
+  AutoScalGr:
     Value: !Ref AutoScalingGroup
     Export:
-      Name: !Sub TargetGroup-${TagProject}-${Environment}-${Identifier}
+      Name: !Sub AutoScalingGroup-${TagProject}-${Environment}-${Identifier}
 
 Parameters:
   Environment:
@@ -59,6 +59,7 @@ Parameters:
     MinLength: 3
     MaxLength: 63
     ConstraintDescription: Input-Parameter must match pattern '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    Default: access.log.study
 
 Resources:
   #====================================
@@ -202,7 +203,7 @@ Resources:
       UnhealthyThresholdCount: 5
       Matcher:
         HttpCode: 200-299
-      Name: !Sub TG-${TagProject}-${Identifier}
+      Name: !Sub ${TagProject}-${Environment}-${Identifier}
       Port: 80
       Protocol: HTTP
       TargetType: instance

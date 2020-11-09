@@ -73,13 +73,13 @@ Resources:
         DeploymentOption: WITH_TRAFFIC_CONTROL
       # 環境設定
       AutoScalingGroups:
-        - Fn::ImportValue: !Sub TargetGroup-${TagProject}-${Environment}-${Identifier}
+        - Fn::ImportValue: !Sub AutoScalingGroup-${TagProject}-${Environment}-${Identifier}
       # デプロイ設定
       DeploymentConfigName: CodeDeployDefault.AllAtOnce
       # ロードバランサー
       LoadBalancerInfo:
         TargetGroupInfoList:
-          - Name: !Sub TG-${TagProject}-${Identifier}
+          - Name: !Sub ${TagProject}-${Environment}-${Identifier}
       Deployment:
         Description: Deploy in-place mode before deploy blue-green mode
         Revision:

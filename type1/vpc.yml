@@ -173,18 +173,16 @@ Resources:
           SourceSecurityGroupId: !Ref SGForBastion
 
         - Description: HTTPFromALB
-          CidrIp: 0.0.0.0/0
           FromPort: 80
           IpProtocol: tcp
-          # SourceSecurityGroupId: !Ref SGForALB
+          SourceSecurityGroupId: !Ref SGForALB
           ToPort: 80
 
-        - Description: HTTPFromALB
-          CidrIp: 0.0.0.0/0
-          FromPort: 443
-          IpProtocol: tcp
-          # SourceSecurityGroupId: !Ref SGForALB
-          ToPort: 443
+        # - Description: HTTPFromALB
+        #   FromPort: 443
+        #   IpProtocol: tcp
+        #   SourceSecurityGroupId: !Ref SGForALB
+        #   ToPort: 443
 
       Tags:
         - Key: Project
@@ -250,7 +248,7 @@ Resources:
   #====================================
   # Internet Gateway
   #====================================
-  internetGateway:
+  InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
@@ -264,10 +262,10 @@ Resources:
           Value: !Sub IG-${TagProject}-${Environment}
 
   # Internet GatewayをVPCにアタッチ
-  igAttachment:
+  IGAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref internetGateway
+      InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
 
   #====================================
@@ -289,27 +287,27 @@ Resources:
           Value: !Sub ${TagProject}-${Environment}-Public
 
   # ルートテーブルにゲートウェイをアタッチ
-  routeTableToGateWay:
+  RouteTableToGateWay:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref internetGateway
+      GatewayId: !Ref InternetGateway
       RouteTableId: !Ref RouteTableForPublicSubnet
 
   # パブリックサブネットにルートテーブルをアタッチ
-  subnetRouteTableAssociation1:
+  SubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref RouteTableForPublicSubnet
       SubnetId: !Ref PublicSubnet1
 
-  subnetRouteTableAssociation2:
+  SubnetRouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref RouteTableForPublicSubnet
       SubnetId: !Ref PublicSubnet2
 
-  subnetRouteTableAssociation3:
+  SubnetRouteTableAssociation3:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref RouteTableForPublicSubnet
@@ -329,6 +327,14 @@ Resources:
             Ref: Environment
         - Key: Name
           Value: !Sub ${TagProject}-${Environment}-Private
+
+  # ルートテーブルにゲートウェイをアタッチ
+  RouteTableToGateWay:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTableForPrivateSubnet
 
   #====================================
   # End Point

@@ -173,15 +173,15 @@ Resources:
           SourceSecurityGroupId: !Ref SGForBastion
 
         - Description: HTTPFromALB
-          FromPort: 80
-          IpProtocol: tcp
           SourceSecurityGroupId: !Ref SGForALB
+          IpProtocol: tcp
+          FromPort: 80
           ToPort: 80
 
         # - Description: HTTPFromALB
-        #   FromPort: 443
-        #   IpProtocol: tcp
         #   SourceSecurityGroupId: !Ref SGForALB
+        #   IpProtocol: tcp
+        #   FromPort: 443
         #   ToPort: 443
 
       Tags:
@@ -201,8 +201,8 @@ Resources:
       GroupName: SGForBastion
       VpcId: !Ref VPC
       SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          Description: All
+        - Description: All
+          CidrIp: 0.0.0.0/0
           IpProtocol: '-1'
       Tags:
         - Key: Project
@@ -221,19 +221,19 @@ Resources:
       GroupName: SGForALB
       VpcId: !Ref VPC
       SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          Description: All
+        - Description: All
+          CidrIp: 0.0.0.0/0
           IpProtocol: '-1'
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          Description: HTTPFromALB
+        - Description: HTTPFromALB
+          CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
           FromPort: 80
-          IpProtocol: tcp
           ToPort: 80
-        - CidrIp: 0.0.0.0/0
-          Description: HTTPFromALB
-          FromPort: 443
+        - Description: HTTPFromALB
+          CidrIp: 0.0.0.0/0
           IpProtocol: tcp
+          FromPort: 443
           ToPort: 443
       Tags:
         - Key: Project

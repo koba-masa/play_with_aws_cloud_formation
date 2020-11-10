@@ -287,7 +287,7 @@ Resources:
           Value: !Sub ${TagProject}-${Environment}-Public
 
   # ルートテーブルにゲートウェイをアタッチ
-  RouteTableToGateWay:
+  PublicRouteTableToGateWay:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
@@ -329,7 +329,7 @@ Resources:
           Value: !Sub ${TagProject}-${Environment}-Private
 
   # ルートテーブルにゲートウェイをアタッチ
-  RouteTableToGateWay:
+  PrivateRouteTableToGateWay:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0

@@ -15,6 +15,11 @@ Outputs:
     Export:
       Name: !Sub SGForWebServer-${TagProject}-${Environment}
 
+  SecurityGroupForDB:
+    Value: !Ref SGForDB
+    Export:
+      Name: !Sub SGForDB-${TagProject}-${Environment}
+
   Vpc:
     Value: !Ref VPC
     Export:
@@ -39,16 +44,17 @@ Parameters:
   Environment:
     Description: Select target environment.
     Type: String
-    Default: Develop
+    Default: develop
     AllowedValues:
-      - Develop
-      - Staging
-      - Production
+      - develop
+      - staging
+      - production
 
   TagProject:
     Description: Input project name for tag.
     Type: String
-    Default: HogeProject
+    AllowedPattern: '[a-z]{1,}'
+    Default: hogeproject
 
   VPCCidrBlock:
     Description: Input IPv4 CiderBlock for VPC. ex)10.0.0.0/16
@@ -245,6 +251,28 @@ Resources:
         - Key: Name
           Value: !Sub ${TagProject}-${Environment}-ALB
 
+  SGForDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Secrurity Group for DB
+      GroupName: SGForDB
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: All
+          IpProtocol: '-1'
+      SecurityGroupIngress:
+        - Description: TCPFromWebServer
+          SourceSecurityGroupId: !Ref SGForWebServer
+          FromPort: 3306
+          IpProtocol: tcp
+          ToPort: 3306
+        - Description: TCPFromBastion
+          SourceSecurityGroupId: !Ref SGForBastion
+          FromPort: 3306
+          IpProtocol: tcp
+          ToPort: 3306
+
   #====================================
   # Internet Gateway
   #====================================
@@ -259,7 +287,7 @@ Resources:
           Value:
             Ref: Environment
         - Key: Name
-          Value: !Sub IG-${TagProject}-${Environment}
+          Value: !Sub ${TagProject}-${Environment}
 
   # Internet GatewayをVPCにアタッチ
   IGAttachment:
